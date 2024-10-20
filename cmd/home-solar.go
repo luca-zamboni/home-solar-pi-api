@@ -102,7 +102,8 @@ func getVarString(varName string) string {
 func getVarint(varName string) int {
 	varInt, err := strconv.Atoi(os.Getenv(varName))
 	if err != nil {
-		panic(fmt.Sprintf("Interval not a number :%s %s", varName, os.Getenv(varName)))
+		fmt.Printf("Not a number :%s %s\n", varName, os.Getenv(varName))
+		panic(fmt.Sprintf("Not a number :%s %s", varName, os.Getenv(varName)))
 	}
 
 	return varInt
