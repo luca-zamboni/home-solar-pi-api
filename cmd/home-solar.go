@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"home-solar-pi/pkg/api"
 	"home-solar-pi/pkg/db"
 	"home-solar-pi/pkg/device"
@@ -101,7 +102,7 @@ func getVarString(varName string) string {
 func getVarint(varName string) int {
 	varInt, err := strconv.Atoi(os.Getenv(varName))
 	if err != nil {
-		panic("Interval not a number")
+		panic(fmt.Sprintf("Interval not a number :%s %s", varName, os.Getenv(varName)))
 	}
 
 	return varInt
