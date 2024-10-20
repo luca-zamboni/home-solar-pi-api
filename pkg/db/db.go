@@ -22,7 +22,23 @@ type PostresConf struct {
 
 func New(conf PostresConf) (*DbService, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable", conf.Host, conf.User, conf.Pass, conf.Name, conf.Port)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+	var err error
+	var db *gorm.DB
+	retry := 0
+	for err != nil || retry == 0 {
+
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
+		retry++
+
+		if retry > 5 {
+			return nil, err
+		}
+
+		time.Sleep(time.Second * 5)
+
+	}
 
 	if err != nil {
 		return nil, err

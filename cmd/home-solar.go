@@ -70,7 +70,7 @@ func main() {
 }
 
 func initVar() {
-	godotenv.Load("../home-solar-pi/.env")
+	godotenv.Load(".env")
 
 	utils.InitGlobals()
 

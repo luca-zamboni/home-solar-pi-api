@@ -17,7 +17,8 @@ func (s *ApiService) StartServer() {
 	apiRouter := r.Group("/api")
 	apiRouter.GET("/inverter", s.getCurrentPower)
 
-	r.Run(":5000")
+	err := r.Run(":5000")
+	panic(err.Error())
 }
 
 func (api *ApiService) getCurrentPower(c *gin.Context) {
