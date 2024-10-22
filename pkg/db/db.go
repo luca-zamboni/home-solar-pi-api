@@ -49,7 +49,8 @@ func New(conf PostresConf) (*DbService, error) {
 	}
 
 	db.AutoMigrate(&InverterReading{})
-	db.AutoMigrate(&HeaterLogs{})
+	db.AutoMigrate(&HeaterAction{})
+	db.AutoMigrate(&Action{})
 
 	return &dbService, nil
 }
@@ -65,24 +66,27 @@ func (s DbService) InsertReading(reading int) error {
 	return nil
 }
 
-func (s DbService) InsertHeaterlog(reading int, on bool) error {
+func (s DbService) InsertHeaterAction(reading int, on bool) error {
 	status := POWER_OFF
 	if on {
 		status = POWER_ON
 	}
-	record := HeaterLogs{
-		Reading:   reading,
-		CreatedAt: time.Now(),
-		Status:    status,
+
+	now := time.Now()
+	action := Action{
+		CreatedAt: now,
+		Name:      string(status),
 	}
 
-	s.db.Create(&record)
+	heaterAction := HeaterAction{
+		Reading:   reading,
+		CreatedAt: now,
+		Status:    status,
+		Action:    action,
+	}
+
+	s.db.Create(&action)
+	s.db.Create(&heaterAction)
 
 	return nil
-}
-
-func (s DbService) GetLastHeaterStatus() HeaterStatus {
-	var log HeaterLogs
-	s.db.Order("CreatedAt desc").First(&log)
-	return log.Status
 }

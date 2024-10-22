@@ -3,18 +3,16 @@ package worker
 import (
 	"home-solar-pi/pkg/db"
 	"home-solar-pi/pkg/device"
-	"home-solar-pi/pkg/utils"
 	"log"
-	"math/rand"
 	"time"
 )
 
 type HeaterInverterWorker struct {
-	inverterService *device.InterverService
-	heaterService   *device.HeaterService
-	logger          *log.Logger
-	dbService       *db.DbService
-	threshold       int
+	inverterDevice *device.InverterDevice
+	heaterDevice   *device.HeaterDevice
+	logger         *log.Logger
+	dbService      *db.DbService
+	threshold      int
 }
 
 type FallBackIntervall int
@@ -24,14 +22,14 @@ var (
 	NORMAL   FallBackIntervall = 0
 )
 
-func NewHeaterInverterWorker(inverterService *device.InterverService, heaterService *device.HeaterService,
+func NewHeaterInverterWorker(inverterDevice *device.InverterDevice, heaterDevice *device.HeaterDevice,
 	logger *log.Logger, dbService *db.DbService, threshold int) HeaterInverterWorker {
 	return HeaterInverterWorker{
-		inverterService: inverterService,
-		heaterService:   heaterService,
-		logger:          logger,
-		dbService:       dbService,
-		threshold:       threshold,
+		inverterDevice: inverterDevice,
+		heaterDevice:   heaterDevice,
+		logger:         logger,
+		dbService:      dbService,
+		threshold:      threshold,
 	}
 }
 
@@ -64,7 +62,7 @@ func (w *HeaterInverterWorker) StartHeaterInverterCycle(interval time.Duration) 
 
 func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 
-	statusOn, err := w.heaterService.GetStatus()
+	status, err := w.heaterDevice.Status()
 
 	if err != nil {
 		w.logger.Printf("Error heater := %s\n", err.Error())
@@ -72,7 +70,7 @@ func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 	}
 
 	// shelly auto deactivates after HEATER_TOGGLE seconds
-	if statusOn {
+	if status == device.INACTIVE || status == device.POWER_ON {
 		return NORMAL
 	}
 
@@ -88,7 +86,7 @@ func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 	w.dbService.InsertReading(reading)
 
 	if reading > w.threshold {
-		_, err := w.heaterService.PowerOn()
+		err := w.heaterDevice.PowerOn()
 		if err != nil {
 			w.logger.Printf("Error heater := %s\n", err.Error())
 			return NORMAL
@@ -96,7 +94,7 @@ func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 		w.logger.Println("Heater activated")
 
 		// Inserting in Heater logs when activated with which reading from inverter
-		w.dbService.InsertHeaterlog(reading, true)
+		w.dbService.InsertHeaterAction(reading, true)
 	}
 
 	return NORMAL
@@ -104,20 +102,15 @@ func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 }
 
 func (w *HeaterInverterWorker) getInverterReading() (int, error) {
-	var power *device.InverterResponse
-
-	if utils.Inactive {
-		return rand.Int()%300 + 400, nil
-	}
 
 	var err error
-	power, err = w.inverterService.GetCurrentPower()
+	power, err := w.inverterDevice.ReadValue()
 
 	if err != nil {
 		w.logger.Printf("Error retrieving current power\n")
 		return 0, err
 	}
 
-	return power.Body.Data.PAC.Values["1"], nil
+	return power.(int), nil
 
 }

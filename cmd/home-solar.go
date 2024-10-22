@@ -21,10 +21,10 @@ var (
 	INVERTER_API    string
 	UPDATE_INTERVAL int
 
-	HEATER_HOST   string
-	HEATER_PORT   int
-	HEATER_API    string
-	HEATER_TOGGLE int
+	HEATER_HOST            string
+	HEATER_PORT            int
+	HEATER_API             string
+	HEATER_TOGGLE_INTERVAL int
 
 	PG_USER string
 	PG_PASS string
@@ -37,14 +37,32 @@ var (
 
 func main() {
 
-	initVar()
-
-	inverterService := device.NewInterverService(INVERTER_HOST, INVERTER_PORT, INVERTER_API)
-	heaterService := device.NewHeaterService(HEATER_HOST, HEATER_PORT, HEATER_API, HEATER_TOGGLE, log.Default())
-
-	apiServer := api.ApiService{
-		InverterService: &inverterService,
+	envPath := ".env"
+	if len(os.Args) == 2 {
+		envPath = os.Args[1]
 	}
+
+	initVar(envPath)
+
+	logger := log.Default()
+
+	inverterDevice := device.NewInterver(device.DeviceConfig{
+		Host:    INVERTER_HOST,
+		Port:    INVERTER_PORT,
+		ApiPath: INVERTER_API,
+	})
+	heaterDevice := device.NewHeater(device.DeviceConfig{
+		Host:    HEATER_HOST,
+		Port:    HEATER_PORT,
+		ApiPath: HEATER_API,
+	}, HEATER_TOGGLE_INTERVAL)
+
+	devices := make(map[string]device.Device)
+
+	devices["inverter"] = inverterDevice
+	devices["heater"] = heaterDevice
+
+	apiServer := api.NewApiServer(devices)
 
 	dbService, err := db.New(db.PostresConf{
 		User: PG_USER,
@@ -58,7 +76,7 @@ func main() {
 		panic("Error connecting to Postgres")
 	}
 
-	workerService := worker.NewHeaterInverterWorker(&inverterService, &heaterService, log.Default(), dbService, INVERTER_THRESHOLD)
+	workerService := worker.NewHeaterInverterWorker(&inverterDevice, &heaterDevice, logger, dbService, INVERTER_THRESHOLD)
 
 	updaterInterval := time.Second * time.Duration(UPDATE_INTERVAL)
 
@@ -70,8 +88,9 @@ func main() {
 
 }
 
-func initVar() {
-	godotenv.Load(".env")
+func initVar(envPath string) {
+
+	godotenv.Load(envPath)
 
 	utils.InitGlobals()
 
@@ -84,7 +103,7 @@ func initVar() {
 	HEATER_HOST = getVarString("HEATER_HOST")
 	HEATER_PORT = getVarint("HEATER_PORT")
 	HEATER_API = getVarString("HEATER_API")
-	HEATER_TOGGLE = getVarint("HEATER_TOGGLE")
+	HEATER_TOGGLE_INTERVAL = getVarint("HEATER_TOGGLE")
 
 	PG_USER = getVarString("PG_USER")
 	PG_PASS = getVarString("PG_PASS")

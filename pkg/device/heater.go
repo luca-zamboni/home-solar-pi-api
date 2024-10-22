@@ -9,44 +9,48 @@ import (
 	"net/http"
 )
 
-type HeaterService struct {
-	BaseDeviceService
-	HEATER_TOGGLE int
+type HeaterDevice struct {
+	BaseDevice
+	toggleInterval int
+	logger         *log.Logger
 }
 
-func NewHeaterService(HOST string, PORT int, API string, HEATER_TOGGLE int, logger *log.Logger) HeaterService {
-	return HeaterService{
-		BaseDeviceService{
-			HOST:   HOST,
-			PORT:   PORT,
-			API:    API,
-			logger: logger,
+func NewHeater(config DeviceConfig, interval int) HeaterDevice {
+
+	return HeaterDevice{
+		BaseDevice: BaseDevice{
+			config: &config,
 		},
-		HEATER_TOGGLE,
+		logger:         utils.GetLogger(),
+		toggleInterval: interval,
 	}
 }
 
-func (s *HeaterService) PowerOn() (any, error) {
-	return s.changePower(true)
+func (s HeaterDevice) PowerOn() error {
+	_, err := s.changePower(true)
+	return err
 }
 
-func (s *HeaterService) PowerOff() (any, error) {
-	return s.changePower(false)
+func (s HeaterDevice) PowerOff() error {
+	log.Println("asd")
+	_, err := s.changePower(false)
+	return err
 }
 
-func (s *HeaterService) changePower(on bool) (any, error) {
+func (s *HeaterDevice) changePower(on bool) (any, error) {
 
-	if utils.Inactive {
-		s.logger.Println("Fake Heater POWER ON")
-		return "", nil
-	}
+	// if utils.Inactive {
+	// 	s.logger.Println("Fake Heater POWER ON")
+	// 	return "", nil
+	// }
 
 	deviceUrl, _ := s.GetDeviceUrl()
 
 	uri := fmt.Sprintf("%s/Switch.Set?id=0&on=%t", deviceUrl, on)
 	if on {
-		uri = fmt.Sprintf("%s&toggle_after=%d", uri, s.HEATER_TOGGLE)
+		uri = fmt.Sprintf("%s&toggle_after=%d", uri, s.toggleInterval)
 	}
+
 	resp, err := http.Get(uri)
 
 	if err != nil {
@@ -64,24 +68,34 @@ func (s *HeaterService) changePower(on bool) (any, error) {
 	return string(bytes), nil
 }
 
-func (s *HeaterService) GetStatus() (bool, error) {
+func (s HeaterDevice) Status() (DeviceStatus, error) {
+
+	if utils.Debug {
+		return INACTIVE, nil
+	}
+
 	deviceUrl, _ := s.GetDeviceUrl()
 
 	uri := fmt.Sprintf("%s/Shelly.GetStatus", deviceUrl)
 	resp, err := http.Get(uri)
 
 	if err != nil {
-		return false, err
+		return INACTIVE, err
 	}
 
 	var response HeaterStatusResponse
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	defer resp.Body.Close()
+
 	if err != nil {
-		return false, err
+		return INACTIVE, err
 	}
 
-	return response.Switch0.Output, nil
+	if response.Switch0.Output {
+		return POWER_ON, nil
+	}
+
+	return POWER_OFF, nil
 
 }
 

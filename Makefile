@@ -18,7 +18,7 @@ build-dev:
 .PHONY: run-dev
 run-dev:
 	go run github.com/cosmtrek/air@v1.43.0 \
-		--build.cmd "make build-dev" --build.bin "./dist/${binary_name}" --build.delay "100" \
+		--build.cmd "make build-dev" --build.bin "./dist/${binary_name} ./dist/.env" --build.delay "100" \
 		--build.exclude_dir "postgres-data" \
 		--build.include_ext "go" \
 		--misc.clean_on_exit "true"

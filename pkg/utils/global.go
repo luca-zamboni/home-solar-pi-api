@@ -1,11 +1,18 @@
 package utils
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 var (
-	Inactive bool
+	Debug bool
 )
 
 func InitGlobals() {
-	Inactive = os.Getenv("INACTIVE") == "true"
+	Debug = os.Getenv("DEBUG") == "true"
+}
+
+func GetLogger() *log.Logger {
+	return log.Default()
 }

@@ -14,8 +14,16 @@ var (
 	POWER_OFF HeaterStatus = "POWER_OFF"
 )
 
-type HeaterLogs struct {
+type Action struct {
+	ID        uint `gorm:"unique;primaryKey;autoIncrement"`
+	CreatedAt time.Time
+	Name      string
+}
+
+type HeaterAction struct {
 	Reading   int
 	CreatedAt time.Time
 	Status    HeaterStatus
+	ActionID  uint
+	Action    Action
 }

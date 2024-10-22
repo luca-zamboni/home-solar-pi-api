@@ -1,0 +1,13 @@
+GET http://localhost:5000/api/device/inverter/value
+
+### 
+
+PUT http://localhost:5000/api/device/heater/on
+
+### 
+
+PUT http://localhost:5000/api/device/heater/off
+
+### 
+
+GET http://localhost:5000/api/device/heater/status

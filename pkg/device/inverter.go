@@ -2,9 +2,11 @@ package device
 
 import (
 	"encoding/json"
+	"home-solar-pi/pkg/utils"
 	"net/http"
 )
 
+// Model
 type InverterResponse struct {
 	Head any
 	Body struct {
@@ -22,39 +24,41 @@ type Power struct {
 	Values map[string]int
 }
 
-type InterverService struct {
-	BaseDeviceService
+// Device
+type InverterDevice struct {
+	BaseDevice
 }
 
-func NewInterverService(HOST string, PORT int, API string) InterverService {
-	return InterverService{
-		BaseDeviceService{
-			HOST: HOST,
-			PORT: PORT,
-			API:  API,
+func NewInterver(config DeviceConfig) InverterDevice {
+	return InverterDevice{
+		BaseDevice: BaseDevice{
+			config: &config,
 		},
 	}
 }
 
-func (s *InterverService) GetCurrentPower() (*InverterResponse, error) {
+func (s InverterDevice) ReadValue() (any, error) {
+
+	if utils.Debug {
+		return 27, nil
+	}
 
 	uri, err := s.GetDeviceUrl()
 	if err != nil {
-		return nil, err
+		return -1, err
 	}
 
 	resp, err := http.Get(uri)
 	if err != nil {
-		return nil, err
+		return -1, err
 	}
 
 	var power InverterResponse
 	err = json.NewDecoder(resp.Body).Decode(&power)
 
 	if err != nil {
-		return nil, err
+		return -1, err
 	}
 
-	return &power, err
-
+	return power.Body.Data.PAC.Values["1"], err
 }
