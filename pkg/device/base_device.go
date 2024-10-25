@@ -1,8 +1,11 @@
 package device
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+
+	"gorm.io/datatypes"
 )
 
 var (
@@ -11,55 +14,82 @@ var (
 )
 
 type DeviceConfig struct {
-	Host    string
-	Port    int
-	ApiPath string
+	Host string
+	Port int
+	Api  string
 }
 
-type BaseDevice struct {
-	config *DeviceConfig
+type Device struct {
+	// config *DeviceConfig
+	ID            uint `gorm:"unique;primaryKey;autoIncrement"`
+	Name          string
+	Type          DeviceType
+	CurrentStatus DeviceStatus
+	Actions       []DeviceActionLog
+	Info          datatypes.JSON `sql:"type:jsonb"`
+}
+
+type DeviceActionLog struct {
+	DeviceId     uint         `gorm:"primaryKey;autoIncrement:false"`
+	StatusUpdate DeviceAction `gorm:"primaryKey;autoIncrement:false"`
 }
 
 type DeviceStatus string
 
 const (
-	POWER_ON  DeviceStatus = "POWER_ON"
-	POWER_OFF DeviceStatus = "POWER_OFF"
-	INACTIVE  DeviceStatus = "INACTIVE"
+	ACTIVE   DeviceStatus = "ACTIVE"
+	INACTIVE DeviceStatus = "INACTIVE"
+	ON       DeviceStatus = "ON"
+	OFF      DeviceStatus = "OFF"
 )
 
-type Device interface {
+type DeviceAction string
+
+const (
+	POWER_ON  DeviceAction = "POWER_ON"
+	POWER_OFF DeviceAction = "POWER_OFF"
+)
+
+type DeviceImpl interface {
 	GetDeviceUrl() (string, error)
 	PowerOn() error
 	PowerOff() error
 	Status() (DeviceStatus, error)
 	ReadValue() (any, error)
+	GetConfig() (DeviceConfig, error)
 }
 
 func (config DeviceConfig) GetUrl() (string, error) {
-	if config.Host == "" || config.Port == 0 || config.ApiPath == "" {
+	if config.Host == "" || config.Port == 0 || config.Api == "" {
 		return "", errVarNotInitialized
 	}
 
-	return fmt.Sprintf("http://%s:%d/%s", config.Host, config.Port, config.ApiPath), nil
+	return fmt.Sprintf("http://%s:%d/%s", config.Host, config.Port, config.Api), nil
 }
 
-func (device BaseDevice) GetDeviceUrl() (string, error) {
-	return device.config.GetUrl()
+func (device Device) GetConfig() (DeviceConfig, error) {
+	var config DeviceConfig
+	err := json.Unmarshal(device.Info, &config)
+	return config, err
 }
 
-func (device BaseDevice) PowerOn() error {
+func (device Device) GetDeviceUrl() (string, error) {
+	config, _ := device.GetConfig()
+	return config.GetUrl()
+}
+
+func (device Device) PowerOn() error {
 	return errMethodNotImplemented
 }
 
-func (device BaseDevice) PowerOff() error {
+func (device Device) PowerOff() error {
 	return errMethodNotImplemented
 }
 
-func (device BaseDevice) Status() (DeviceStatus, error) {
+func (device Device) Status() (DeviceStatus, error) {
 	return INACTIVE, nil
 }
 
-func (device BaseDevice) ReadValue() (any, error) {
+func (device Device) ReadValue() (any, error) {
 	return false, errMethodNotImplemented
 }

@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"home-solar-pi/pkg/db"
 	"home-solar-pi/pkg/device"
 	"log"
 	"time"
@@ -11,7 +10,7 @@ type HeaterInverterWorker struct {
 	inverterDevice *device.InverterDevice
 	heaterDevice   *device.HeaterDevice
 	logger         *log.Logger
-	dbService      *db.DbService
+	dbService      *device.DbService
 	threshold      int
 }
 
@@ -23,7 +22,7 @@ var (
 )
 
 func NewHeaterInverterWorker(inverterDevice *device.InverterDevice, heaterDevice *device.HeaterDevice,
-	logger *log.Logger, dbService *db.DbService, threshold int) HeaterInverterWorker {
+	logger *log.Logger, dbService *device.DbService, threshold int) HeaterInverterWorker {
 	return HeaterInverterWorker{
 		inverterDevice: inverterDevice,
 		heaterDevice:   heaterDevice,
@@ -70,7 +69,7 @@ func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 	}
 
 	// shelly auto deactivates after HEATER_TOGGLE seconds
-	if status == device.INACTIVE || status == device.POWER_ON {
+	if status == device.INACTIVE || status == device.ON {
 		return NORMAL
 	}
 
@@ -83,7 +82,7 @@ func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 	w.logger.Printf("Inverter Power %+v\n", reading)
 
 	// Inserting in log table to do statistics
-	w.dbService.InsertReading(reading)
+	// w.dbService.InsertReading(reading)
 
 	if reading > w.threshold {
 		err := w.heaterDevice.PowerOn()
@@ -94,7 +93,7 @@ func (w *HeaterInverterWorker) doWork() FallBackIntervall {
 		w.logger.Println("Heater activated")
 
 		// Inserting in Heater logs when activated with which reading from inverter
-		w.dbService.InsertHeaterAction(reading, true)
+		// w.dbService.InsertHeaterAction(reading, true)
 	}
 
 	return NORMAL

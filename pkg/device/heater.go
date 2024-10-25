@@ -2,28 +2,44 @@ package device
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"home-solar-pi/pkg/utils"
 	"io"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type HeaterDevice struct {
-	BaseDevice
-	toggleInterval int
-	logger         *log.Logger
+	Device
+	logger *log.Logger
 }
 
-func NewHeater(config DeviceConfig, interval int) HeaterDevice {
+type HeaterConfig struct {
+	DeviceConfig
+	Interval int
+}
+
+func NewHeater(baseDevice Device) HeaterDevice {
+
+	logger := utils.GetLogger()
 
 	return HeaterDevice{
-		BaseDevice: BaseDevice{
-			config: &config,
-		},
-		logger:         utils.GetLogger(),
-		toggleInterval: interval,
+		Device: baseDevice,
+		logger: logger,
 	}
+}
+
+func (s HeaterDevice) GetInterval() (int, error) {
+	heaterConfig, err := s.GetHeaterConfig()
+	return heaterConfig.Interval, err
+}
+
+func (s HeaterDevice) GetHeaterConfig() (HeaterConfig, error) {
+	var heaterConfig HeaterConfig
+	err := json.Unmarshal(s.Info, &heaterConfig)
+	return heaterConfig, err
 }
 
 func (s HeaterDevice) PowerOn() error {
@@ -32,7 +48,6 @@ func (s HeaterDevice) PowerOn() error {
 }
 
 func (s HeaterDevice) PowerOff() error {
-	log.Println("asd")
 	_, err := s.changePower(false)
 	return err
 }
@@ -48,7 +63,13 @@ func (s *HeaterDevice) changePower(on bool) (any, error) {
 
 	uri := fmt.Sprintf("%s/Switch.Set?id=0&on=%t", deviceUrl, on)
 	if on {
-		uri = fmt.Sprintf("%s&toggle_after=%d", uri, s.toggleInterval)
+		interval, err := s.GetInterval()
+
+		if err != nil {
+			return nil, err
+		}
+
+		uri = fmt.Sprintf("%s&toggle_after=%d", uri, interval)
 	}
 
 	resp, err := http.Get(uri)
@@ -63,6 +84,10 @@ func (s *HeaterDevice) changePower(on bool) (any, error) {
 	defer resp.Body.Close()
 	if err != nil {
 		return "", err
+	}
+
+	if strings.Contains(string(bytes), "-103") {
+		return "", errors.New(string(bytes))
 	}
 
 	return string(bytes), nil
@@ -92,10 +117,10 @@ func (s HeaterDevice) Status() (DeviceStatus, error) {
 	}
 
 	if response.Switch0.Output {
-		return POWER_ON, nil
+		return ON, nil
 	}
 
-	return POWER_OFF, nil
+	return OFF, nil
 
 }
 
