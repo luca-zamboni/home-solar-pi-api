@@ -57,7 +57,6 @@ func New(conf PostresConf) (*DbService, error) {
 	// db.AutoMigrate(&HeaterAction{})
 	// db.AutoMigrate(&Action{})
 	db.AutoMigrate(&Device{})
-	db.AutoMigrate(&DeviceActionLog{})
 
 	return &dbService, nil
 }
@@ -68,7 +67,7 @@ func (s DbService) GetAllDevices() ([]Device, error) {
 	return devices, tx.Error
 }
 
-func (s DbService) GetDeviceByType(dType DeviceType) (Device, error) {
+func (s DbService) GetDeviceByType(dType DriverType) (Device, error) {
 	var device Device
 	tx := s.db.Where("Type = ?", dType).First(&device)
 

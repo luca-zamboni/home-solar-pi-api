@@ -1,4 +1,3 @@
-
 main_package_path = ./cmd
 binary_name = home-solar-pi-server
 

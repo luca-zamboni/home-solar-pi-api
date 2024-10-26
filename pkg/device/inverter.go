@@ -18,9 +18,9 @@ func NewInterver(baseDevice Device) InverterDevice {
 
 func (s InverterDevice) ReadValue() (any, error) {
 
-	if s.CurrentStatus == INACTIVE {
-		return -1, nil
-	}
+	// if s.CurrentStatus == INACTIVE {
+	// 	return -1, nil
+	// }
 
 	uri, err := s.GetDeviceUrl()
 	if err != nil {
