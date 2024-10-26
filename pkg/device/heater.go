@@ -9,6 +9,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type HeaterDevice struct {
@@ -37,9 +40,9 @@ func (s HeaterDevice) GetInterval() (int, error) {
 }
 
 func (s HeaterDevice) GetHeaterConfig() (HeaterConfig, error) {
-	var heaterConfig HeaterConfig
-	err := json.Unmarshal(s.Info, &heaterConfig)
-	return heaterConfig, err
+	var config HeaterConfig
+	err := mapstructure.Decode(s.Info, &config)
+	return config, err
 }
 
 func (s HeaterDevice) PowerOn() error {
@@ -54,11 +57,6 @@ func (s HeaterDevice) PowerOff() error {
 
 func (s *HeaterDevice) changePower(on bool) (any, error) {
 
-	// if utils.Inactive {
-	// 	s.logger.Println("Fake Heater POWER ON")
-	// 	return "", nil
-	// }
-
 	deviceUrl, _ := s.GetDeviceUrl()
 
 	uri := fmt.Sprintf("%s/Switch.Set?id=0&on=%t", deviceUrl, on)
@@ -69,7 +67,7 @@ func (s *HeaterDevice) changePower(on bool) (any, error) {
 			return nil, err
 		}
 
-		uri = fmt.Sprintf("%s&toggle_after=%d", uri, interval)
+		uri = fmt.Sprintf("%s&toggle_after=%d", uri, int(time.Duration(interval)*time.Minute))
 	}
 
 	resp, err := http.Get(uri)
@@ -94,10 +92,6 @@ func (s *HeaterDevice) changePower(on bool) (any, error) {
 }
 
 func (s HeaterDevice) Status() (DeviceStatus, error) {
-
-	if utils.Debug {
-		return INACTIVE, nil
-	}
 
 	deviceUrl, _ := s.GetDeviceUrl()
 

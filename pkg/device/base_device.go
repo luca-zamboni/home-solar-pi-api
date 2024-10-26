@@ -1,16 +1,23 @@
 package device
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
-	"gorm.io/datatypes"
+	"github.com/mitchellh/mapstructure"
 )
 
 var (
 	errVarNotInitialized    = errors.New("variables not initialized")
 	errMethodNotImplemented = errors.New("method not implemented")
+	errNotFound             = errors.New("not found")
+)
+
+type DriverType string
+
+const (
+	InverterType DriverType = "Inverter"
+	HeaterType   DriverType = "Heater"
 )
 
 type DeviceConfig struct {
@@ -20,18 +27,10 @@ type DeviceConfig struct {
 }
 
 type Device struct {
-	// config *DeviceConfig
-	ID            uint `gorm:"unique;primaryKey;autoIncrement"`
-	Name          string
-	Type          DeviceType
-	CurrentStatus DeviceStatus
-	Actions       []DeviceActionLog
-	Info          datatypes.JSON `sql:"type:jsonb"`
-}
-
-type DeviceActionLog struct {
-	DeviceId     uint         `gorm:"primaryKey;autoIncrement:false"`
-	StatusUpdate DeviceAction `gorm:"primaryKey;autoIncrement:false"`
+	Name   string     `yaml:"Name"`
+	Driver DriverType `yaml:"Driver"`
+	State  string     `yaml:"State"`
+	Info   any        `yaml:"Info"`
 }
 
 type DeviceStatus string
@@ -50,7 +49,9 @@ const (
 	POWER_OFF DeviceAction = "POWER_OFF"
 )
 
-type DeviceImpl interface {
+type DeviceDriver interface {
+	GetDeviceName() string
+	GetDriverName() DriverType
 	GetDeviceUrl() (string, error)
 	PowerOn() error
 	PowerOff() error
@@ -59,17 +60,25 @@ type DeviceImpl interface {
 	GetConfig() (DeviceConfig, error)
 }
 
+func (device Device) GetDeviceName() string {
+	return device.Name
+}
+
+func (device Device) GetDriverName() DriverType {
+	return device.Driver
+}
+
 func (config DeviceConfig) GetUrl() (string, error) {
 	if config.Host == "" || config.Port == 0 || config.Api == "" {
 		return "", errVarNotInitialized
 	}
 
-	return fmt.Sprintf("http://%s:%d/%s", config.Host, config.Port, config.Api), nil
+	return fmt.Sprintf("%s:%d/%s", config.Host, config.Port, config.Api), nil
 }
 
 func (device Device) GetConfig() (DeviceConfig, error) {
 	var config DeviceConfig
-	err := json.Unmarshal(device.Info, &config)
+	err := mapstructure.Decode(device.Info, &config)
 	return config, err
 }
 

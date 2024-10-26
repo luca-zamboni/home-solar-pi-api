@@ -4,13 +4,8 @@ GET http://localhost:5000/api/device/Heater/value
 ### 
 GET http://localhost:5000/api/device/all
 ### 
-
 PUT http://localhost:5000/api/device/Heater/on
-
 ### 
-
 PUT http://localhost:5000/api/device/Heater/off
-
 ### 
-
 GET http://localhost:5000/api/device/Heater/status

@@ -1,4 +1,4 @@
-package worker
+package rule
 
 import (
 	"home-solar-pi/pkg/device"

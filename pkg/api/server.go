@@ -47,7 +47,7 @@ func (api *ApiService) getAllDevices(c *gin.Context) {
 
 func (api *ApiService) getDeviceValue(c *gin.Context) {
 
-	device, err := api.deviceManager.GetDeviceImpl(device.DeviceType(c.Param("device")))
+	device, err := api.deviceManager.GetDeviceDriver(device.DriverType(c.Param("device")))
 
 	if err != nil {
 		c.String(http.StatusBadRequest, err.Error())
@@ -71,14 +71,7 @@ func (api *ApiService) getDeviceValue(c *gin.Context) {
 
 func (api *ApiService) setDeviceOn(c *gin.Context) {
 
-	device, err := api.deviceManager.GetDeviceImpl(device.DeviceType(c.Param("device")))
-
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	err = device.PowerOn()
+	err := api.deviceManager.PowerOn(device.DriverType(c.Param("device")))
 
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
@@ -90,28 +83,19 @@ func (api *ApiService) setDeviceOn(c *gin.Context) {
 
 func (api *ApiService) setDeviceOff(c *gin.Context) {
 
-	device, err := api.deviceManager.GetDeviceImpl(device.DeviceType(c.Param("device")))
+	err := api.deviceManager.PowerOff(device.DriverType(c.Param("device")))
 
 	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-
-	device.PowerOff()
 
 	c.String(http.StatusOK, "OFF")
 }
 
 func (api *ApiService) getDeviceStatus(c *gin.Context) {
 
-	device, err := api.deviceManager.GetDeviceImpl(device.DeviceType(c.Param("device")))
-
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	status, err := device.Status()
+	status, err := api.deviceManager.DeviceStatus(device.DriverType(c.Param("device")))
 
 	if err != nil {
 		c.String(http.StatusBadRequest, "asd"+err.Error())

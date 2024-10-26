@@ -1,8 +1,7 @@
-
 main_package_path = ./cmd
 binary_name = home-solar-pi-server
 
-env_file = ../.env
+env_file = .env
 
 
 .PHONY: build
@@ -19,10 +18,20 @@ build-dev:
 run-dev:
 	go run github.com/cosmtrek/air@v1.43.0 \
 		--build.cmd "make build-dev" --build.bin "./dist/${binary_name} ./dist/.env" --build.delay "100" \
-		--build.exclude_dir "postgres-data" \
 		--build.include_ext "go" \
 		--misc.clean_on_exit "true"
 
 .PHONY: build-docker
 build-docker: build
 	docker build -t home-solar-pi-server .
+
+
+# TEST 
+
+.PHONY: run-test
+run-test:
+	go run github.com/cosmtrek/air@v1.43.0 \
+		--build.bin "go test home-solar-pi/pkg/rule -v" --build.delay "100" \
+		--build.include_ext "go" \
+		--misc.clean_on_exit "true"
+

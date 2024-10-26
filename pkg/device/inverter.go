@@ -2,6 +2,7 @@ package device
 
 import (
 	"encoding/json"
+	"math/rand"
 	"net/http"
 )
 
@@ -18,8 +19,8 @@ func NewInterver(baseDevice Device) InverterDevice {
 
 func (s InverterDevice) ReadValue() (any, error) {
 
-	if s.CurrentStatus == INACTIVE {
-		return -1, nil
+	if s.State == "Debug" {
+		return rand.Int31()%200 + 500, nil
 	}
 
 	uri, err := s.GetDeviceUrl()
