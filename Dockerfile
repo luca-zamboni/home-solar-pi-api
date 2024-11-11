@@ -7,6 +7,6 @@ COPY ./dist/.env ./
 
 EXPOSE 5000
 
-ADD ./home-solar ./home-solar
+ADD ./solar-home ./solar-home
 
 ENTRYPOINT ["./home-solar-pi-server"]
